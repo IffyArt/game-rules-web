@@ -9,11 +9,42 @@ export function mdToHtml(md: string): string {
   let html = '';
   let inList = false;
   let inTable = false;
+  let inCodeBlock = false;
+  let codeBlockLang = '';
+  let codeBlockLines: string[] = [];
   let tableHeaders: string[] = [];
   let tableRows: string[][] = [];
 
   for (let i = 0; i < lines.length; i++) {
-    let line = lines[i].trim();
+    let line = lines[i];
+
+    // 0. Handle fenced code blocks (including mermaid)
+    if (line.trim().startsWith('```')) {
+      if (!inCodeBlock) {
+        inCodeBlock = true;
+        codeBlockLang = line.trim().slice(3).trim();
+        codeBlockLines = [];
+        continue;
+      }
+
+      const codeContent = codeBlockLines.join('\n');
+      if (codeBlockLang === 'mermaid') {
+        html += `<div class="mermaid-block" data-mermaid="${escapeAttr(codeContent)}"><pre class="code-block mermaid">${escapeHtml(codeContent)}</pre><p class="mermaid-note">（流程圖：請參考官方 PDF 原文）</p></div>`;
+      } else {
+        html += `<pre class="code-block${codeBlockLang ? ` lang-${codeBlockLang}` : ''}">${escapeHtml(codeContent)}</pre>`;
+      }
+      inCodeBlock = false;
+      codeBlockLang = '';
+      codeBlockLines = [];
+      continue;
+    }
+
+    if (inCodeBlock) {
+      codeBlockLines.push(line);
+      continue;
+    }
+
+    line = line.trim();
 
     // 1. Handle Table Parsing
     if (line.startsWith('|')) {
@@ -145,12 +176,19 @@ export function mdToHtml(md: string): string {
 }
 
 // Inline formatting (bold, links, code, custom badges)
-function renderInline(text: string): string {
+function escapeHtml(text: string): string {
   return text
-    // Escaping simple HTML
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
+    .replace(/>/g, '&gt;');
+}
+
+function escapeAttr(text: string): string {
+  return escapeHtml(text).replace(/"/g, '&quot;');
+}
+
+function renderInline(text: string): string {
+  return escapeHtml(text)
     // Bold markdown (**text**)
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     // Underline/Italic (*text*)

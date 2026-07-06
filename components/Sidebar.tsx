@@ -1,10 +1,12 @@
 import React from 'react';
 import { BookOpen, Users, Layers, BarChart2, Scale, Clock, Gavel, History, Sun, Moon } from 'lucide-react';
+import { PENALTY_META } from '@/lib/db';
 
 interface RecentRuling {
   id: string;
   timestamp: string;
   query: string;
+  displayQuery?: string;
   level: string;
   title: string;
   penalty: string;
@@ -19,13 +21,21 @@ interface SidebarProps {
   onSelectRecentRuling: (query: string, level: string) => void;
 }
 
+function getPenaltyLabel(penalty: string): string {
+  return PENALTY_META[penalty]?.label?.split(' ')[0] || penalty;
+}
+
+function getPenaltyClass(penalty: string): string {
+  return PENALTY_META[penalty]?.cls || 'pen-caution';
+}
+
 export default function Sidebar({
   activeTab,
   setActiveTab,
   isDark,
   setIsDark,
   recentRulings,
-  onSelectRecentRuling
+  onSelectRecentRuling,
 }: SidebarProps) {
   return (
     <aside className="sidebar">
@@ -58,34 +68,74 @@ export default function Sidebar({
         <a className={`menu-item ${activeTab === 'appendix' ? 'active' : ''}`} onClick={() => setActiveTab('appendix')}>
           <Clock style={{ width: 18, height: 18 }} /> 附則：超時勝負
         </a>
-        
-        <div style={{ margin: '14px 0 8px 10px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+
+        <div
+          style={{
+            margin: '14px 0 8px 10px',
+            fontSize: '0.75rem',
+            fontWeight: 700,
+            color: 'var(--text-muted)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+          }}
+        >
           AI 裁判智能工具
         </div>
-        
+
         <a className={`menu-item ${activeTab === 'referee' ? 'active' : ''}`} onClick={() => setActiveTab('referee')}>
           <Gavel style={{ width: 18, height: 18 }} /> 裁判判罰系統 (RAG)
         </a>
       </nav>
 
-      {/* Sidebar History Panel */}
       {recentRulings.length > 0 && activeTab === 'referee' && (
         <div style={{ padding: '16px', borderTop: '1px solid var(--border-color)', maxHeight: '200px', overflowY: 'auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '10px' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '0.8rem',
+              fontWeight: 600,
+              color: 'var(--text-muted)',
+              marginBottom: '10px',
+            }}
+          >
             <History style={{ width: 14, height: 14 }} /> 歷史判罰紀錄
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {recentRulings.map((r) => (
-              <div 
-                key={r.id} 
+              <div
+                key={r.id}
                 onClick={() => onSelectRecentRuling(r.query, r.level)}
-                style={{ fontSize: '0.75rem', padding: '8px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'var(--bg-main)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                style={{
+                  fontSize: '0.75rem',
+                  padding: '8px',
+                  borderRadius: '4px',
+                  border: '1px solid var(--border-color)',
+                  background: 'var(--bg-main)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
               >
-                <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginRight: '6px', color: 'var(--text-main)' }}>
-                  {r.query}
+                <div
+                  style={{
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    marginRight: '6px',
+                    color: 'var(--text-main)',
+                  }}
+                  title={r.query}
+                >
+                  {r.displayQuery || r.query}
                 </div>
-                <span className={`pen-tag ${r.penalty === 'caution' ? 'pen-caution' : r.penalty === 'warning' ? 'pen-warning' : r.penalty === 'dq' ? 'pen-dq' : 'pen-loss'}`} style={{ fontSize: '0.6rem', padding: '2px 6px' }}>
-                  {r.penalty === 'caution' ? '注意' : r.penalty === 'warning' ? '警告' : r.penalty === 'dq' ? '失格' : '局負'}
+                <span
+                  className={`pen-tag ${getPenaltyClass(r.penalty)}`}
+                  style={{ fontSize: '0.6rem', padding: '2px 6px' }}
+                >
+                  {getPenaltyLabel(r.penalty)}
                 </span>
               </div>
             ))}
@@ -102,4 +152,5 @@ export default function Sidebar({
     </aside>
   );
 }
+
 export type { RecentRuling };
